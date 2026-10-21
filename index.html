@@ -69,14 +69,7 @@ footer{text-align:center;color:var(--muted);padding:20px;font-size:12px}
 <section class="panel">
 <h2>🗺️ Campaign map</h2>
 <p class="small">Select a state to campaign. Map tiles are a simplified game interface, not geographic boundaries.</p>
-<div style="width:100%;overflow:hidden;border-radius:12px">
-  <iframe
-    src="https://indiamaps.netlify.app/"
-    title="India interactive map reference"
-    style="width:100%;height:520px;border:0;background:white"
-    loading="lazy">
-  </iframe>
-</div>
+<div class="map" id="map"></div> 
 <div id="stateInfo"></div>
 <label>Campaign action</label>
 <select id="action">
@@ -212,5 +205,308 @@ function nextCycle(){
  note("New political year started.");render();
 }
 </script>
+  
+<style>
+#v2-game {
+  --bg:#0b1220;--panel:#131e30;--line:#293a53;
+  --blue:#3b82f6;--muted:#9aabc2;
+  font-family:system-ui,sans-serif;color:#edf4ff;
+  background:var(--bg);padding:18px;border-radius:18px;
+  margin:24px auto;max-width:1100px;
+}
+#v2-game *{box-sizing:border-box}
+#v2-game h2,#v2-game h3{margin:0 0 12px}
+#v2-game p{color:var(--muted)}
+#v2-game .v2-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#v2-game .v2-card{background:var(--panel);border:1px solid var(--line);padding:14px;border-radius:14px;min-width:0}
+#v2-game .v2-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0}
+#v2-game .v2-stat{background:#17263c;padding:12px;border-radius:12px}
+#v2-game .v2-num{font-size:22px;font-weight:800;display:block}
+#v2-game button,#v2-game select,#v2-game input{width:100%;padding:11px;border-radius:9px;border:1px solid #354963;background:#101b2b;color:white;margin:5px 0;font:inherit}
+#v2-game button{cursor:pointer;background:#1e40af;border-color:#3b82f6;font-weight:650}
+#v2-game button:active{transform:scale(.98)}
+#v2-game button:disabled{opacity:.4;cursor:not-allowed}
+#v2-game .v2-state{background:#17263c;text-align:left}
+#v2-game .v2-state.active{border:2px solid #60a5fa;background:#203c60}
+#v2-game .v2-muted{font-size:12px;color:var(--muted)}
+#v2-game .v2-bar{height:8px;background:#26364b;border-radius:20px;overflow:hidden;margin:8px 0}
+#v2-game .v2-fill{height:100%;background:#60a5fa;width:50%;transition:width .3s}
+#v2-game .v2-log{max-height:180px;overflow:auto;font-size:13px;line-height:1.6}
+#v2-game .v2-action{background:#174e43;border-color:#258b72}
+#v2-game .v2-danger{background:#762b3d;border-color:#a94458}
+@media(max-width:580px){
+ #v2-game .v2-grid{grid-template-columns:1fr}
+ #v2-game .v2-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #v2-game{padding:10px}
+ #v2-game .v2-stat{padding:8px}
+ #v2-game .v2-num{font-size:18px}
+}
+</style>
+
+<section id="v2-game">
+  <p style="color:#60a5fa;font-weight:800;letter-spacing:2px">POLITICAL SANDBOX • V2</p>
+  <h2 id="v2-party-title">National Command Centre</h2>
+  <p>Build your party. Win support. Form the government.</p>
+
+  <div class="v2-stats">
+    <div class="v2-stat"><span class="v2-muted">Treasury</span><span class="v2-num" id="v2-money">₹100 Cr</span></div>
+    <div class="v2-stat"><span class="v2-muted">Popularity</span><span class="v2-num" id="v2-pop">35%</span></div>
+    <div class="v2-stat"><span class="v2-muted">Turn</span><span class="v2-num" id="v2-turn">1</span></div>
+  </div>
+
+  <div class="v2-grid">
+    <div class="v2-card">
+      <h3>🏛️ Party headquarters</h3>
+      <label for="v2-name">Party name</label>
+      <input id="v2-name" maxlength="45" placeholder="Enter your party name">
+      <label for="v2-ideology">Political ideology</label>
+      <select id="v2-ideology">
+        <option value="development">Development-focused</option>
+        <option value="welfare">Welfare-focused</option>
+        <option value="liberal">Liberal</option>
+        <option value="conservative">Conservative</option>
+        <option value="green">Green politics</option>
+        <option value="regional">Regionalist</option>
+      </select>
+      <button id="v2-save-party">Save party identity</button>
+      <p class="v2-muted">A fictional simulation. Ideology influences gameplay, not real-world predictions.</p>
+    </div>
+
+    <div class="v2-card">
+      <h3>📍 Constituency & state campaign</h3>
+      <label for="v2-state-select">Select a state</label>
+      <select id="v2-state-select"></select>
+      <div id="v2-state-info"></div>
+      <button class="v2-action" id="v2-campaign">Run campaign — ₹5 Cr</button>
+      <button id="v2-organise">Organise local party — ₹3 Cr</button>
+      <button id="v2-poll">Commission opinion poll — ₹2 Cr</button>
+    </div>
+
+    <div class="v2-card">
+      <h3>📜 Manifesto & governance</h3>
+      <label for="v2-policy">Choose a policy initiative</label>
+      <select id="v2-policy">
+        <option value="jobs">Jobs & industry</option>
+        <option value="health">Healthcare</option>
+        <option value="education">Education reform</option>
+        <option value="roads">Transport & infrastructure</option>
+        <option value="welfare">Cost-of-living relief</option>
+        <option value="environment">Environment & clean energy</option>
+      </select>
+      <button id="v2-policy-btn">Launch policy campaign — ₹8 Cr</button>
+      <button id="v2-recruit">Recruit a senior leader — ₹6 Cr</button>
+      <p id="v2-policy-info" class="v2-muted">Policies can improve public support and party reputation.</p>
+    </div>
+
+    <div class="v2-card">
+      <h3>📰 Political events</h3>
+      <div id="v2-event"><p>No active event. Advance the turn to encounter events.</p></div>
+      <div id="v2-event-actions"></div>
+      <h3 style="margin-top:16px">📊 National standing</h3>
+      <div id="v2-standing"></div>
+    </div>
+  </div>
+
+  <div class="v2-card" style="margin-top:12px">
+    <h3>🗺️ State support dashboard</h3>
+    <p class="v2-muted">Select a state to campaign there. Support levels are fictional game values.</p>
+    <div id="v2-state-buttons" class="v2-grid"></div>
+  </div>
+
+  <div class="v2-grid" style="margin-top:12px">
+    <div class="v2-card">
+      <h3>🗳️ Election centre</h3>
+      <p id="v2-election-desc">Campaign before calling a general election.</p>
+      <button id="v2-election">Call general election</button>
+      <div id="v2-election-result"></div>
+    </div>
+    <div class="v2-card">
+      <h3>📔 Political diary</h3>
+      <div id="v2-log" class="v2-log">Your political journey begins here.</div>
+      <button id="v2-next-turn">End turn → Next month</button>
+      <button id="v2-reset" class="v2-danger">Reset this V2 game</button>
+      <p class="v2-muted">Reset affects only this add-on's saved game.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  const root=document.getElementById("v2-game");
+  if(!root || root.dataset.ready) return;
+  root.dataset.ready="yes";
+  const $=id=>document.getElementById(id);
+  const states=[
+    ["Uttar Pradesh",80],["Maharashtra",48],["West Bengal",42],
+    ["Bihar",40],["Tamil Nadu",39],["Madhya Pradesh",29],
+    ["Karnataka",28],["Gujarat",26],["Rajasthan",25],
+    ["Andhra Pradesh",25],["Odisha",21],["Kerala",20],
+    ["Telangana",17],["Assam",14],["Jharkhand",14],
+    ["Punjab",13],["Chhattisgarh",11],["Haryana",10],
+    ["Delhi",7],["Jammu and Kashmir",5],["Uttarakhand",5],
+    ["Himachal Pradesh",4],["Arunachal Pradesh",2],["Goa",2],
+    ["Manipur",2],["Meghalaya",2],["Tripura",2],["Mizoram",1],
+    ["Nagaland",1],["Sikkim",1],["Andaman and Nicobar Islands",1],
+    ["Chandigarh",1],["Dadra and Nagar Haveli and Daman and Diu",2],
+    ["Ladakh",1],["Lakshadweep",1],["Puducherry",1]
+  ];
+  const fresh=()=>({
+    party:"People's Development Party",ideology:"development",
+    money:100,pop:35,turn:1,leaders:1,selected:"Maharashtra",
+    policies:[],event:null,lastSeats:null,
+    support:Object.fromEntries(states.map(([s])=>[s,25+Math.floor(Math.random()*21)])),
+    log:["Your party headquarters has opened. Build support before the election."]
+  });
+  let g;
+  try{g=JSON.parse(localStorage.getItem("politicalSandboxV2"))||fresh();}
+  catch(e){g=fresh();}
+  if(!g.support || !g.log)g=fresh();
+
+  const save=()=>{try{localStorage.setItem("politicalSandboxV2",JSON.stringify(g));}catch(e){}};
+  const clamp=n=>Math.max(1,Math.min(95,Math.round(n)));
+  const money=()=> "₹"+g.money+" Cr";
+  const note=s=>{g.log.unshift("Turn "+g.turn+": "+s);g.log=g.log.slice(0,25);};
+  const spend=(n)=>{if(g.money<n){note("Not enough funds for that action.");return false;}g.money-=n;return true;};
+  const change=(state,n)=>g.support[state]=clamp(g.support[state]+n);
+  const current=()=>g.selected;
+  const ideologyName=()=>($("v2-ideology").selectedOptions[0]||{}).textContent||g.ideology;
+
+  states.forEach(([s])=>{
+    const o=document.createElement("option");o.value=s;o.textContent=s;$("v2-state-select").appendChild(o);
+  });
+
+  function render(){
+    $("v2-party-title").textContent=g.party+" — Command Centre";
+    $("v2-name").value=g.party;
+    $("v2-ideology").value=g.ideology;
+    $("v2-state-select").value=g.selected;
+    $("v2-money").textContent=money();
+    $("v2-pop").textContent=g.pop+"%";
+    $("v2-turn").textContent=g.turn;
+    const support=g.support[current()]||25;
+    $("v2-state-info").innerHTML="<p><b>"+current()+"</b></p><p>Party support: <b>"+support+"%</b></p><div class='v2-bar'><div class='v2-fill' style='width:"+support+"%'></div></div><p>Lok Sabha seats: "+(states.find(x=>x[0]===current())||["",0])[1]+"</p>";
+    $("v2-state-buttons").innerHTML="";
+    states.forEach(([s,seats])=>{
+      const b=document.createElement("button");
+      b.className="v2-state"+(s===current()?" active":"");
+      b.innerHTML="<b>"+s+"</b><br><span class='v2-muted'>"+g.support[s]+"% support · "+seats+" seats</span><div class='v2-bar'><div class='v2-fill' style='width:"+g.support[s]+"%'></div></div>";
+      b.onclick=()=>{g.selected=s;render();};
+      $("v2-state-buttons").appendChild(b);
+    });
+    $("v2-standing").innerHTML="<p>Party leaders: "+g.leaders+"</p><p>Policies launched: "+g.policies.length+"</p><p>Strongest state: "+states.slice().sort((a,b)=>g.support[b[0]]-g.support[a[0]])[0][0]+"</p><p>Last election: "+(g.lastSeats===null?"Not held":g.lastSeats+" seats")+"</p>";
+    $("v2-log").innerHTML=g.log.map(x=>"<div>• "+x.replace(/</g,"&lt;").replace(/>/g,"&gt;")+"</div>").join("");
+    if(g.event){
+      $("v2-event").innerHTML="<b>"+g.event.title+"</b><p>"+g.event.description+"</p>";
+      $("v2-event-actions").innerHTML="";
+      g.event.choices.forEach((c,i)=>{
+        const b=document.createElement("button");b.textContent=c.label;
+        b.onclick=()=>resolveEvent(i);$("v2-event-actions").appendChild(b);
+      });
+    }else{
+      $("v2-event").innerHTML="<p>No active event. Advance the turn to encounter events.</p>";
+      $("v2-event-actions").innerHTML="";
+    }
+    save();
+  }
+
+  $("v2-save-party").onclick=()=>{
+    const name=$("v2-name").value.trim();
+    if(!name){alert("Enter a party name first.");return;}
+    g.party=name;g.ideology=$("v2-ideology").value;
+    note("Party identity updated: "+g.party+".");render();
+  };
+  $("v2-state-select").onchange=e=>{g.selected=e.target.value;render();};
+  $("v2-campaign").onclick=()=>{
+    if(!spend(5))return;
+    change(current(),8+Math.floor(Math.random()*6));g.pop=clamp(g.pop+2);
+    note("Held a major rally in "+current()+". Support increased.");render();
+  };
+  $("v2-organise").onclick=()=>{
+    if(!spend(3))return;
+    change(current(),5);note("Expanded local organisation in "+current()+".");render();
+  };
+  $("v2-poll").onclick=()=>{
+    if(!spend(2))return;
+    note("Internal poll: "+current()+" support estimated at "+g.support[current()]+"%. This is a game statistic, not a real poll.");
+    alert("Fictional game poll\\n"+current()+": "+g.support[current()]+"% party support");
+    render();
+  };
+  $("v2-policy-btn").onclick=()=>{
+    const policy=$("v2-policy").value;
+    if(g.policies.includes(policy)){alert("This policy has already been launched.");return;}
+    if(!spend(8))return;
+    g.policies.push(policy);g.pop=clamp(g.pop+4);
+    states.forEach(([s])=>change(s,1));
+    note("Launched "+$("v2-policy").selectedOptions[0].textContent+". Popularity improved.");render();
+  };
+  $("v2-recruit").onclick=()=>{
+    if(!spend(6))return;
+    g.leaders++;g.pop=clamp(g.pop+1);
+    change(current(),3);note("Recruited a senior leader for the "+current()+" campaign.");render();
+  };
+
+  const events=[
+    {title:"Rising cost of living",description:"Households are worried about everyday expenses.",choices:[
+      {label:"Announce relief plan (₹8 Cr)",money:-8,pop:5,all:1},
+      {label:"Focus on long-term jobs (₹3 Cr)",money:-3,pop:2,all:0},
+      {label:"Do nothing",money:0,pop:-4,all:0}]},
+    {title:"Corruption allegation",description:"A fictional rival accuses your party of wrongdoing.",choices:[
+      {label:"Publish an independent audit (₹5 Cr)",money:-5,pop:4,all:0},
+      {label:"Address the public",money:0,pop:1,all:0},
+      {label:"Ignore the allegation",money:0,pop:-5,all:0}]},
+    {title:"Severe weather emergency",description:"A state needs urgent relief and recovery support.",choices:[
+      {label:"Fund relief work (₹10 Cr)",money:-10,pop:5,all:2},
+      {label:"Coordinate volunteers (₹3 Cr)",money:-3,pop:3,all:1},
+      {label:"Wait for updates",money:0,pop:-3,all:0}]},
+    {title:"Coalition offer",description:"A small fictional party offers to work with you.",choices:[
+      {label:"Accept and negotiate",money:0,pop:2,all:0},
+      {label:"Request policy commitments",money:0,pop:3,all:0},
+      {label:"Decline the offer",money:0,pop:-1,all:0}]}
+  ];
+  function resolveEvent(i){
+    const c=g.event.choices[i];
+    if(c.money<0&&!spend(-c.money)){alert("Not enough funds. Choose another response.");return;}
+    g.pop=clamp(g.pop+c.pop);
+    if(c.all)states.forEach(([s])=>change(s,c.all));
+    note(g.event.title+": "+c.label+".");
+    g.event=null;render();
+  }
+  $("v2-next-turn").onclick=()=>{
+    g.turn++;g.money+=8;
+    g.pop=clamp(g.pop+(g.policies.length?1:0));
+    if(!g.event && Math.random()<.8){
+      const e=events[Math.floor(Math.random()*events.length)];
+      g.event=JSON.parse(JSON.stringify(e));
+    }
+    note("A new month begins. Party receives ₹8 Cr in simulated funding.");
+    render();
+  };
+  $("v2-election").onclick=()=>{
+    if(g.event){alert("Resolve the active political event first.");return;}
+    let total=0,won=0;
+    states.forEach(([s,seats])=>{
+      const support=g.support[s];
+      const share=Math.max(0,Math.min(.95,(support/100)*.85+(g.pop/100)*.15));
+      const stateSeats=Math.round(seats*share);
+      won+=stateSeats;total+=seats;
+    });
+    won=Math.max(0,Math.min(543,won));
+    g.lastSeats=won;
+    const majority=won>=272;
+    $("v2-election-result").innerHTML="<h3>"+(majority?"🏆 Majority government!":won>=200?"🤝 Coalition negotiations":"📣 Opposition benches")+"</h3><p>Your party wins an estimated <b>"+won+" of 543 seats</b> in this simplified simulation.</p><p>"+(majority?"You can form the government in the game.":won>=200?"Seek coalition partners to reach 272 seats.":"Build stronger support before the next election.")+"</p>";
+    $("v2-election-desc").textContent="Election completed on turn "+g.turn+".";
+    note("General election held. Simulated result: "+won+" seats.");
+    render();
+  };
+  $("v2-reset").onclick=()=>{
+    if(!confirm("Reset only the V2 Political Sandbox game?"))return;
+    g=fresh();$("v2-election-result").innerHTML="";
+    $("v2-election-desc").textContent="Campaign before calling a general election.";
+    render();
+  };
+  render();
+})();
+</script>
+  
 </body>
 </html>
