@@ -1,0 +1,171 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Republic of India: Political Sandbox</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#07111f;color:#eef4ff;font:15px system-ui}
+header{padding:22px;background:#101f36;border-bottom:1px solid #29405e}
+h1{font-size:23px;margin:0;color:#79b8ff}
+h2{font-size:19px}
+p{color:#aabbd2}
+main{max-width:850px;margin:auto;padding:16px}
+.card{background:#102039;border:1px solid #2a4263;border-radius:14px;padding:17px;margin:14px 0}
+button,input,select{font:inherit;padding:11px;border-radius:8px;border:1px solid #405a7b}
+input,select{background:#081528;color:white;width:100%;margin:6px 0 12px}
+button{background:#2677db;color:white;border:0;font-weight:700;margin:4px 3px 4px 0;cursor:pointer}
+button:disabled{opacity:.4}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:#09172a;padding:12px;border-radius:9px}
+.num{font-size:21px;font-weight:800}
+.small{font-size:12px;color:#aabbd2}
+.region{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #30445e;padding:12px 0}
+.region button{min-width:100px}
+.bar{height:7px;background:#263a54;border-radius:8px;overflow:hidden}
+.fill{height:100%;background:#45b5ff}
+.hidden{display:none}
+footer{text-align:center;padding:25px;color:#8296b2}
+</style>
+</head>
+<body>
+<header>
+<div class="small">INDIA • POLITICAL STRATEGY SIMULATOR</div>
+<h1>🇮🇳 Republic of India</h1>
+<div>Political Sandbox · Build your political future</div>
+</header>
+<main>
+<section class="card" id="setup">
+<h2>🏛️ Start your political career</h2>
+<p>Create your own party and compete in a simulated Indian election.</p>
+<label>Party name</label>
+<input id="party" maxlength="35" value="People's Reform Party">
+<label>Party symbol</label>
+<select id="symbol">
+<option>🪷 Lotus</option><option>✋ Hand</option>
+<option>🧹 Broom</option><option>🌾 Wheat</option>
+<option>⭐ Star</option><option>🦁 Lion</option>
+</select>
+<label>Political approach</label>
+<select id="ideology">
+<option value="balanced">Balanced development</option>
+<option value="welfare">Welfare and public services</option>
+<option value="business">Business and jobs</option>
+<option value="green">Environment and sustainability</option>
+</select>
+<button onclick="start()">Create party & start</button>
+</section>
+
+<section id="game" class="hidden">
+<div class="stats">
+<div class="stat"><div class="small">TREASURY</div><div class="num" id="money">₹10 Cr</div></div>
+<div class="stat"><div class="small">SUPPORT</div><div class="num" id="support">12%</div></div>
+<div class="stat"><div class="small">TURN</div><div class="num" id="turn">1</div></div>
+</div>
+<div class="card">
+<h2 id="partyTitle">Your Party</h2>
+<p id="partyInfo">Your journey begins.</p>
+<div class="small">National support</div>
+<div class="bar"><div class="fill" id="supportBar" style="width:12%"></div></div>
+</div>
+<div class="card">
+<h2>🗺️ Campaign across India</h2>
+<p>Spend funds to improve support. Each campaign uses one turn.</p>
+<div id="regions"></div>
+</div>
+<div class="card">
+<h2>🗳️ Election Commission</h2>
+<p>Run a simulated election to see your party's seat tally.</p>
+<button onclick="election()">Hold national election</button>
+<div id="results"></div>
+</div>
+<div class="card">
+<h2>📜 Campaign log</h2>
+<div id="log">Your political journey has begun.</div>
+</div>
+<button onclick="resetGame()">Restart game</button>
+</section>
+</main>
+<footer>Prototype simulation • Fictional results • Not official election data</footer>
+
+<script>
+const places=[
+{name:"Maharashtra",seats:48,support:16},
+{name:"Uttar Pradesh",seats:80,support:12},
+{name:"Gujarat",seats:26,support:13},
+{name:"West Bengal",seats:42,support:10},
+{name:"Tamil Nadu",seats:39,support:11},
+{name:"Bihar",seats:40,support:12},
+{name:"Rajasthan",seats:25,support:14},
+{name:"Karnataka",seats:28,support:15},
+{name:"Madhya Pradesh",seats:29,support:13},
+{name:"Delhi",seats:7,support:18}
+];
+let cash=10,support=12,turn=1,partyName="",symbol="",ideology="";
+let logItems=[],finished=false;
+function start(){
+partyName=document.getElementById("party").value.trim();
+if(!partyName){alert("Enter a party name.");return}
+symbol=document.getElementById("symbol").value;
+ideology=document.getElementById("ideology").value;
+document.getElementById("setup").classList.add("hidden");
+document.getElementById("game").classList.remove("hidden");
+document.getElementById("partyTitle").textContent=symbol+" "+partyName;
+document.getElementById("partyInfo").textContent="Approach: "+ideology+". Build support and manage your treasury.";
+render();log("Your party was founded with ₹10 crore.");
+}
+function render(){
+document.getElementById("money").textContent="₹"+cash.toFixed(1)+" Cr";
+document.getElementById("support").textContent=support.toFixed(1)+"%";
+document.getElementById("turn").textContent=turn;
+document.getElementById("supportBar").style.width=Math.min(100,support)+"%";
+document.getElementById("regions").innerHTML=places.map((p,i)=>`
+<div class="region"><div><b>${p.name}</b>
+<div class="small">${p.seats} seats · ${p.support.toFixed(1)}% local support</div></div>
+<button ${finished||cash<0.5?"disabled":""} onclick="campaign(${i})">Campaign ₹0.5 Cr</button></div>`).join("");
+}
+function campaign(i){
+if(finished||cash<0.5)return;
+cash-=0.5;turn++;
+let gain=2+Math.random()*4;
+if(ideology==="welfare")gain+=0.6;
+if(ideology==="business")gain+=0.4;
+if(ideology==="green")gain+=0.3;
+places[i].support=Math.min(75,places[i].support+gain);
+support=Math.min(65,support+gain*0.18);
+log("Campaign in "+places[i].name+": local support increased by "+gain.toFixed(1)+" points.");
+render();
+}
+function election(){
+if(finished){alert("The election has already been held. Restart to play again.");return}
+finished=true;
+let total=0,won=0;
+let breakdown=places.map(p=>{
+let margin=p.support+(support-12)*0.65+(Math.random()*14-7);
+let seats=Math.max(0,Math.min(p.seats,Math.round(p.seats*margin/100)));
+total+=p.seats;won+=seats;
+return {name:p.name,seats,all:p.seats};
+});
+let majority=Math.floor(total/2)+1;
+document.getElementById("results").innerHTML=
+`<hr><h2>📊 Election results</h2>
+<div class="stats">
+<div class="stat"><div class="small">SEATS WON</div><div class="num">${won}</div></div>
+<div class="stat"><div class="small">TOTAL SIMULATED</div><div class="num">${total}</div></div>
+<div class="stat"><div class="small">MAJORITY</div><div class="num">${majority}</div></div></div>
+<h3>${won>=majority?"🏛️ Majority achieved!":"🤝 You need allies to form a majority."}</h3>
+${breakdown.map(p=>`<div class="region"><span>${p.name}</span><b>${p.seats} / ${p.all}</b></div>`).join("")}
+<p class="small">This is a simplified fictional simulation, not a forecast or official election result.</p>`;
+log("Election complete: "+won+" simulated seats won.");
+render();
+}
+function log(message){
+logItems.unshift("Turn "+turn+": "+message);
+document.getElementById("log").innerHTML=logItems.slice(0,8).map(x=>`<p>${x}</p>`).join("");
+}
+function resetGame(){location.reload()}
+</script>
+</body>
+</html>
